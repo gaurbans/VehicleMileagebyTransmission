@@ -1,0 +1,73 @@
+---
+output: pdf_document
+---
+# Regression Models Course Project 
+## Vehicle Mileage as a function of Automatic or Manual Transmission 
+### Executive Summary
+Here we'll look at the mtcars dataset and see the effect on vehicle mileage (mpg) of vehicle transmission (am). There are only two vehicle transmission types: automatic or manual. In the data, automatic transmission is coded as 0 and manual transmission is 1. 
+
+We'll answer to basic questions: 
+1) Is an automatic or manual transmission better for MPG?
+2) What is the MPG difference between automatic and manual transmissions?
+
+### Data Analysis & Discussion
+```{r, message=FALSE}
+library(UsingR)
+data(mtcars)
+```
+First, let's look at average mileage for manual and automatic transmission seperately. 
+```{r}
+mean(mtcars[mtcars$am==0, 'mpg'])
+mean(mtcars[mtcars$am==1, 'mpg'])
+```
+From the above analysis and from the first plot in Appendix 1, we can see that vehicles with manual transmission clearly have better mileage than vehicles with automatic transmission. Not only is the mean mileage much higher for manual transmission vehicles, even the spreads do not overlap, meaning the worst manual transmission vehicles have better mileage than the best automatic transmission vehicles.   
+
+Now let's create a linear model of this data to examine it further. 
+```{r}
+mpgvsam <- lm(mpg~factor(am), data=mtcars)
+summary(mpgvsam)$coef
+```
+From the above summary of the linear model, we can see that our p-values show a significant difference between vehicles with manual versus automatic transmission. The Estimates shown in the Coeffecients correspond to the mean mileage (mpg) for manual transmission (factor(am)0) and automatic transmission (factor(am)1). 
+
+But what if other variables are confounding the manual versus automatic data? What if weight or the number of cylinders are very different for manual versus automatic transmission vehicles? Let's add these other variables in and see what happens. 
+```{r}
+mpgvsam2 <- lm(mpg ~ factor(am) + wt, data=mtcars)
+mpgvsam3 <- lm(mpg ~ factor(am) + wt + factor(cyl), data=mtcars)
+mpgvsam4 <- lm(mpg ~ factor(am) + wt + factor(cyl) + wt*factor(cyl), data=mtcars)
+anova(mpgvsam, mpgvsam2, mpgvsam3, mpgvsam4)
+```
+Looking at the analysis of variance here, we see that the p values are quite significant. This means that vehicle weight and the number of cylinders are strong confounding factors in the relationship between vehicle mileage (mpg) and transmission type (am). 
+
+However, including an interaction term for weight and the number of cylinders yields a p-value that is insignificant. This suggests it's best to leave out the interaction term. 
+
+Let's look at the linear model that relates mpg to transmission, weight, and the number of cylinders, without any interaction terms. Let's use this as our definitive model. 
+```{r}
+summary(mpgvsam3)$coef
+```
+This model leads us to believe that automatic transmission vehicles have slightly better mileage for a given weight and number of cylinders than manual transmission vehicles. However, the p-value for this is not that small, meaning we can't make this statement with the highest confidence. 
+
+Let's also look at the hat values of our linear model to see if there are any outliers biasing the data. The hat values are shown in Appendix 2. Looking at them, none of our points stand out as being outliers. Therefore we choose not to omit any vehicle from our linear models. 
+
+### Conclusions
+Let's wrap up by answering our two original questions: 
+1) Manual transmissions seem better if one just looks at raw data. However, a more thorough analysis including confounding variables, such as weight and number of cylinders, points to the fact that automatic transmissions are better. 
+2) Including weight and the number of cylinders in the linear model, the mileage of automatic vehicles is actually 
+
+### Appendices
+#### Appendix 1
+Boxplot of mileage (mpg) versus transmission (am), without any other variables included. 
+```{r}
+library(ggplot2)
+library(scales)
+mpgamplot <- qplot(factor(mtcars$am), mtcars$mpg, geom="boxplot") + 
+  labs(title="Vehicle Mileage by Transmission", x="Transmission", y="Vehicle Mileage (mpg)")+
+  scale_x_discrete(breaks=c("0", "1"), labels=c("Automatic", "Manual"))
+print(mpgamplot)
+```
+
+#### Appendix 2
+Hat values of our selected model, mpgvsam3. 
+```{r}
+hatvalues(mpgvsam3)
+```
+
